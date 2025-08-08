@@ -1,0 +1,43 @@
+name: Telegram to Email Automation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📦 Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: 📬 Install exim4 MTA
+      run: |
+        sudo apt-get update
+        sudo DEBIAN_FRONTEND=noninteractive apt-get install -y exim4
+
+    - name: ⚙️ Configure exim4 for Internet Delivery
+      run: |
+        echo "dc_eximconfig_configtype='internet'" | sudo tee /etc/exim4/update-exim4.conf.conf
+        sudo update-exim4.conf
+        sudo service exim4 restart || true
+
+    - name: ✉️ Send Emails via send.sh
+      run: |
+        chmod +x send.sh
+        ./send.sh
+
+    - name: ⏳ Wait for Email Queue to Finish (1 Hour)
+      run: |
+        echo "Waiting 1 hour to allow email queue to process..."
+        sleep 3600
+
+    - name: 📂 Upload All Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: all-artifacts
+        path: |
+          *.txt
+          *.csv
+          *.json
+          *.session
